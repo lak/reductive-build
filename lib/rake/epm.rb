@@ -91,6 +91,7 @@ class EPMPackageTask < RedLabPackageTask
     # Create the header of our list file.
     def header
         # Create our list header
+        puts "making header with version #{@version}"
         unless defined? @header
             header = []
             %w{product copyright vendor license readme description
@@ -118,7 +119,7 @@ class EPMPackageTask < RedLabPackageTask
         @need_portable  = true
 
         super
-
+        puts "version is #{@version}"
     end
 
     # The path to the listfile

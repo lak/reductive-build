@@ -258,7 +258,7 @@ class RedLabProject < TaskLib
                 rdoc.title    = @name.capitalize
                 rdoc.options << '--line-numbers' << '--inline-source' <<
                                 '--main' << 'README'
-                rdoc.rdoc_files.include('README', 'LICENSE', 'TODO', 'CHANGELOG')
+                rdoc.rdoc_files.include('README', 'COPYING', 'TODO', 'CHANGELOG')
                 rdoc.rdoc_files.include('lib/**/*.rb')
                 CLEAN.include("html")
             }
@@ -266,7 +266,7 @@ class RedLabProject < TaskLib
             # Publish the html.
             task :publish => [:package, :html] do
                 puts Dir.getwd
-                sh %{cp -r html #{DOWNDIR}/#{@name}/apidocs}
+                sh %{cp -r html #{self.pkgpublishdir}/apidocs}
             end
         else
             warn "No rdoc; skipping html"
@@ -428,7 +428,7 @@ class RedLabProject < TaskLib
 
         # Publish the html.
         task :publish => [:package] do
-            sh %{rsync -av /home/luke/rpm/. #{DOWNDIR}/rpm}
+            sh %{rsync -av /home/luke/rpm/. #{self.publishdir}/rpm}
         end
 
         desc "Update the version in the RPM spec file"
@@ -469,13 +469,13 @@ class RedLabProject < TaskLib
         #    #rdoc.template = 'html'
         #    rdoc.title    = "Puppet"
         #    rdoc.options << '--ri' << '--line-numbers' << '--inline-source' << '--main' << 'README'
-        #    rdoc.rdoc_files.include('README', 'LICENSE', 'TODO', 'CHANGELOG')
+        #    rdoc.rdoc_files.include('README', 'COPYING', 'TODO', 'CHANGELOG')
         #    rdoc.rdoc_files.include('lib/**/*.rb', 'doc/**/*.rdoc')
         #}
 
         if $features[:rdoc]
             task :ri do |ri|
-                files = ['README', 'LICENSE', 'TODO', 'CHANGELOG'] + Dir.glob('lib/**/*.rb')
+                files = ['README', 'COPYING', 'TODO', 'CHANGELOG'] + Dir.glob('lib/**/*.rb')
                 puts "files are \n%s" % files.join("\n")
                 begin
                     ri = RDoc::RDoc.new
@@ -580,10 +580,10 @@ class RedLabProject < TaskLib
             desc "Copy the newly created package into the downloads directory"
             task :publish => [:package] do
                 puts Dir.getwd
-                sh %{cp pkg/#{@name}-#{@version}.gem #{DOWNDIR}/gems}
-                sh %{generate_yaml_index.rb -d #{DOWNDIR}}
-                sh %{cp pkg/#{@name}-#{@version}.tgz #{DOWNDIR}/#{@name}}
-                sh %{ln -sf #{@name}-#{@version}.tgz #{DOWNDIR}/#{@name}/#{@name}-latest.tgz}
+                sh %{cp pkg/#{@name}-#{@version}.gem #{self.publishdir}/gems}
+                sh %{generate_yaml_index.rb -d #{self.publishdir}}
+                sh %{cp pkg/#{@name}-#{@version}.tgz #{self.pkgpublishdir}}
+                sh %{ln -sf #{@name}-#{@version}.tgz #{self.pkgpublishdir}/#{@name}-latest.tgz}
             end
             CLEAN.include("pkg")
         end
@@ -592,6 +592,7 @@ class RedLabProject < TaskLib
     # This task requires extra information from the Rake file.
     def mkepmtask
         if $features[:epm]
+            puts "version is #{@version}"
             Rake::EPMPackageTask.new(@name, @version) do |t|
                 t.copyright = self.copyright
                 t.vendor = self.vendor
@@ -615,7 +616,7 @@ class RedLabProject < TaskLib
                 end
 
                 task :publish do
-                    sh %{rsync -av #{package_dir}/epm self.publishdir/packages}
+                    sh %{rsync -av #{package_dir}/epm/ #{self.publishdir}/packages/}
                 end
             end
         end
