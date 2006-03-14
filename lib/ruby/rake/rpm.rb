@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Create EPM packages.
+# Create RPM packages.
 
 require 'rake/redlabpackage'
 
@@ -41,26 +41,15 @@ module Rake
 #     p.package_files.include("lib/**/*.rb")
 #   end
 #
-class EPMPackageTask < RedLabPackageTask
-    # True if a native package should be produced (default is true).
-    attr_accessor :need_native
-
-    # True if a portable EPM-style should be produced (default is false).
-    attr_accessor :need_portable
+class RPMPackageTask < RedLabPackageTask
+    # The version of the package release, vs. the package itself.
+    attr_accessor :release
 
     # Create the tasks defined by this task library.
     def define
         super
 
         mklistfiletask()
-
-        if need_native
-            epmpackage("native")
-        end
-        
-        if need_portable
-            epmpackage("portable")
-        end
 
         self
     end
@@ -85,6 +74,7 @@ class EPMPackageTask < RedLabPackageTask
 
     # Create the header of our list file.
     def header
+        "Summary: #{@description}"
         # Create our list header
         unless defined? @header
             header = []

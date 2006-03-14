@@ -60,6 +60,12 @@ class RedLabPackageTask < TaskLib
     # Directory used to store the package files (default is 'pkg').
     attr_accessor :package_dir
 
+    # The directory to which to publish packages and html and such.
+    attr_accessor :publishdir
+
+    # The package-specific publishing directory
+    attr_accessor :pkgpublishdir
+
     # The Product name.  Defaults to a capitalized version of the
     # package name
     attr_accessor :product
@@ -78,6 +84,9 @@ class RedLabPackageTask < TaskLib
 
     # The description.
     attr_accessor :description
+
+    # The summary.
+    attr_accessor :summary
 
     # The directory in which to put the binaries.  Defaults to the system
     # default.
@@ -99,6 +108,15 @@ class RedLabPackageTask < TaskLib
     # The directory in which to put Ruby libraries.  Defaults to the
     # system site_dir.
     attr_accessor :sitedir
+
+    # The URL for the package.
+    attr_accessor :url
+    
+    # The source for the package.
+    attr_accessor :source
+
+    # Our operating system.
+    attr_reader :os
 
     # Add a required package.
     def add_dependency(name, version = nil)
@@ -147,6 +165,8 @@ class RedLabPackageTask < TaskLib
 
         @license        = "COPYING"
         @readme         = "README"
+
+        @os             = Facter["operatingsystem"].value
 
         yield self if block_given?
 
@@ -246,7 +266,7 @@ class RedLabPackageTask < TaskLib
     private
 
     def pkgdest
-        @version ? "#{package_dir}/tmp-#{@name}-#{@version}" : @name
+        @version ? "#{package_dir}/epm-#{@name}-#{@version}" : @name
     end
 
     def package_name

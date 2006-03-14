@@ -9,39 +9,20 @@ module Rake
 # Create a packaging task that will package the project into
 # distributable files using EPM (http://www.easysw.com/epm).
 #
-# The PackageTask will create the following targets:
-#
-# [<b>:epmpackage</b>]
-#   Create all the requested package files.
-#
-# [<b>:clobber_package</b>]
-#   Delete all the package files.  This target is automatically
-#   added to the main clobber target.
-#
-# [<b>:repackage</b>]
-#   Rebuild the package files from scratch, even if they are not out
-#   of date.
-#
-# [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tgz"</b>]
-#   Create a gzipped tar package (if <em>need_tar</em> is true).  
-#
-# [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.gz"</b>]
-#   Create a gzipped tar package (if <em>need_tar_gz</em> is true).  
-#
-# [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.tar.bz2"</b>]
-#   Create a bzip2'd tar package (if <em>need_tar_bz2</em> is true).  
-#
-# [<b>"<em>package_dir</em>/<em>name</em>-<em>version</em>.zip"</b>]
-#   Create a zip package archive (if <em>need_zip</em> is true).
-#
-# Example:
-#
-#   Rake::PackageTask.new("rake", "1.2.3") do |p|
-#     p.need_tar = true
-#     p.package_files.include("lib/**/*.rb")
-#   end
-#
 class EPMPackageTask < RedLabPackageTask
+    # Verify we have the binaries.
+    @epm = %x{which epm 2>/dev/null}
+    unless $? == 0
+        raise "EPM does not appear to be installed; cannot make EPM packages"
+    end
+    @mkepmlist = %{which mkepmlist 2>/dev/null}
+    unless $? == 0
+        raise "EPM does not appear to be installed; cannot make EPM packages"
+    end
+
+    # Directory in which to publish epm packages.
+    attr_writer :epmpublishdir
+
     # True if a native package should be produced (default is true).
     attr_accessor :need_native
 
@@ -52,7 +33,13 @@ class EPMPackageTask < RedLabPackageTask
     def define
         super
 
-        mklistfiletask()
+        @definedtasks ||= []
+        methods.find_all { |method| method.to_s =~ /^mktask/
+        }.each { |method|
+            unless @definedtasks.include? method
+                self.send(method)
+            end
+        }
 
         if need_native
             epmpackage("native")
@@ -78,9 +65,27 @@ class EPMPackageTask < RedLabPackageTask
     def epmpackage(pkgtype)
         name = "epm#{pkgtype}".intern
 
-        task name => [listfile(), :copycode] do
-            sh %{epm -n --output-dir #{package_dir} -f #{pkgtype} #{@name} #{listfile}}
+        task name => [self.epmpublishdir, listfile(), :copycode] do
+            sh %{epm --output-dir #{self.epmpublishdir} -f #{pkgtype} #{@name} #{listfile}}
         end
+    end
+
+    # We have to do it this way, because of the order in which the initialize
+    # and define stuff is done.
+    def epmpublishdir
+        unless defined? @epmpublishdir
+            unless self.pkgpublishdir
+                raise "The package publish dir is unset"
+            end
+            # Set the directory in which we make packages
+            @epmpublishdir = File.join(
+                self.package_dir,
+                "epm",
+                Facter["operatingsystem"].value
+            )
+        end
+
+        @epmpublishdir
     end
 
     # Create the header of our list file.
@@ -114,33 +119,28 @@ class EPMPackageTask < RedLabPackageTask
 
         super
 
-        # Verify we have the binaries.
-        @epm = %x{which epm 2>/dev/null}
-        unless $? == 0
-            raise "EPM does not appear to be installed; cannot make EPM packages"
-        end
-        @mkepmlist = %{which mkepmlist 2>/dev/null}
-        unless $? == 0
-            raise "EPM does not appear to be installed; cannot make EPM packages"
-        end
     end
 
     # The path to the listfile
     def listfile
         unless defined? @listfile
-            @listfile = File.join(package_dir, "#{@name}-#{OS}.list")
+            @listfile = File.join(package_dir, "#{@name}-#{@os}.list")
         end
 
         return @listfile
     end
 
+    def mktaskoutputdir
+        directory self.epmpublishdir
+    end
+
     # Create the task that creates our list file.
-    def mklistfiletask
+    def mktasklistfile
         file(listfile() => [:copycode]) do
             type = nil
 
             # The path to the listfile
-            listfile = File.join(package_dir, "#{@name}-#{OS}.list")
+            listfile = File.join(package_dir, "#{@name}-#{@os}.list")
 
             File.open(listfile, "w") do |f|
                 f.puts self.header
@@ -154,6 +154,10 @@ class EPMPackageTask < RedLabPackageTask
                 end
             end
         end
+    end
+
+    def outputdir
+        return File.join(package_dir, "epm")
     end
 end
 end
