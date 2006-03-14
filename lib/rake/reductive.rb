@@ -592,7 +592,7 @@ class RedLabProject < TaskLib
     # This task requires extra information from the Rake file.
     def mkepmtask
         if $features[:epm]
-            Rake::EPMPackageTask.new("puppet", @version) do |t|
+            Rake::EPMPackageTask.new(@name, @version) do |t|
                 t.copyright = self.copyright
                 t.vendor = self.vendor
                 t.description = self.summary

@@ -48,7 +48,7 @@ class RedLabPackageTask < TaskLib
     DIRTYPES = {
         :bindir => :bins,
         :sbindir => :sbins,
-        :sitedir => :rubylibs
+        :sitelibdir => :rubylibs
     }
 
     # Name of the package (from the GEM Spec).
@@ -107,7 +107,7 @@ class RedLabPackageTask < TaskLib
 
     # The directory in which to put Ruby libraries.  Defaults to the
     # system site_dir.
-    attr_accessor :sitedir
+    attr_accessor :sitelibdir
 
     # The URL for the package.
     attr_accessor :url
@@ -161,7 +161,7 @@ class RedLabPackageTask < TaskLib
 
         @bindir         = Config::CONFIG["bindir"]
         @sbindir        = Config::CONFIG["sbindir"]
-        @sitedir        = Config::CONFIG["sitedir"]
+        @sitelibdir     = Config::CONFIG["sitelibdir"]
 
         @license        = "COPYING"
         @readme         = "README"
@@ -202,7 +202,7 @@ class RedLabPackageTask < TaskLib
             file targetdir => basedir
 
             # Get the file list and remove the leading directory.
-            files = self.files(dirname)
+            files = self.files(dirname) or next
 
             reqs = []
             files.each do |sourcefile|
