@@ -592,7 +592,6 @@ class RedLabProject < TaskLib
     # This task requires extra information from the Rake file.
     def mkepmtask
         if $features[:epm]
-            puts "version is #{@version}"
             Rake::EPMPackageTask.new(@name, @version) do |t|
                 t.copyright = self.copyright
                 t.vendor = self.vendor

@@ -119,7 +119,6 @@ class EPMPackageTask < RedLabPackageTask
         @need_portable  = true
 
         super
-        puts "version is #{@version}"
     end
 
     # The path to the listfile
