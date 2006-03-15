@@ -600,7 +600,7 @@ class RedLabProject < TaskLib
                 t.pkgpublishdir = self.pkgpublishdir
 
                 self.requires.each do |name, version|
-                    t.add_dependency(name, ">= #{version}")
+                    t.add_dependency(name, version)
                 end
 
                 yield t
