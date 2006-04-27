@@ -280,6 +280,8 @@ class RedLabProject < TaskLib
                 :prerelease,
                 :clobber,
                 :update_version,
+                :commit_newversion,
+                :trac_version,
                 :tag, # tag everything before we make a bunch of extra dirs
                 :html,
                 :package,
@@ -365,6 +367,33 @@ class RedLabProject < TaskLib
         end
     end
 
+    def mktasktrac_version
+        task :trac_version => [:update_version] do
+            tracpath = "/export/svn/trac/#{@name}"
+
+            unless FileTest.exists?(tracpath)
+                announce "No Trac instance at %s" % tracpath
+            else
+                output = %x{sudo trac-admin #{tracpath} version list}.chomp.split("\n")
+                versions = {}
+                output[3..-1].each do |line|
+                    name, time = line.chomp.split(/\s+/)
+                    versions[name] = time
+                end
+
+                if versions.include?(@version)
+                    announce "Version #{@version} already in Trac"
+                else
+                    announce "Adding #{@name} version #{@version} to Trac"
+                    date = [Time.now.year.to_s,
+                        Time.now.month.to_s,
+                        Time.now.day.to_s].join("-")
+                    system("sudo trac-admin #{tracpath} version add #{@version} #{date}")
+                end
+            end
+        end
+    end
+
     # Create the tag task.
     def mktasktag
         desc "Tag all the SVN files with the latest release number (REL=x.y.z)"
@@ -390,7 +419,8 @@ class RedLabProject < TaskLib
             TESTHOSTS.each { |host|
                 puts "testing %s" % host
                 cwd = Dir.getwd
-                system("ssh #{host} 'cd svn/#{@name}/trunk/test; sudo ./test' 2>&1 >/tmp/#{@name}-#{host}test.out")
+                file = "/tmp/#{@name}-#{host}test.out"
+                system("ssh #{host} 'cd svn/#{@name}/trunk/test; sudo ./test' 2>&1 >#{file}")
 
                 if $? != 0
                     puts "%s failed; output is in %s" % [host, file]
