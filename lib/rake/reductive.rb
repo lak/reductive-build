@@ -213,13 +213,13 @@ class RedLabProject < TaskLib
         end
     end
 
-    def initialize(name)
+    def initialize(name, version = nil)
         @name = name
 
         if ENV['REL']
           @version = ENV['REL']
         else
-          @version = self.currentversion
+          @version = version || self.currentversion
         end
 
         @os = Facter["operatingsystem"].value
@@ -340,7 +340,7 @@ class RedLabProject < TaskLib
             if @version == self.currentversion
                 announce "No version change ... skipping version update"
             else
-                announce "Updating Puppet version to #{@version}"
+                announce "Updating #{@name} version to #{@version}"
                 open("lib/#{@name}.rb") do |rakein|
                     open("lib/#{@name}.rb.new", "w") do |rakeout|
                         rakein.each do |line|
@@ -431,6 +431,10 @@ class RedLabProject < TaskLib
 
     # Create an rpm
     def mktaskrpm
+        unless FileTest.exists?(@rpmspecfile)
+            $stderr.puts "No spec file at %s; skipping rpm" % @rpmspecfile
+            return
+        end
         desc "Create an RPM"
         task :rpm => [self.codedir] do
             tarball = File.join(Dir.getwd, "pkg", "#{@name}-#{@version}.tgz")
@@ -541,7 +545,15 @@ class RedLabProject < TaskLib
     def mktaskalltests
         desc "Run all unit tests."
         task :alltests do
-            sh %{cd test; ./test}
+            if FileTest.exists?("test/test")
+                sh %{cd test; ./test}
+            else
+                Dir.chdir("test") do
+                    Dir.entries(".").find_all { |f| f =~ /\.rb/ }.each do |f|
+                        sh %{ruby #{f}}
+                    end
+                end
+            end
         end
     end
 
