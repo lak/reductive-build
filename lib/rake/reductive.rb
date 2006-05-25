@@ -69,6 +69,15 @@ class RedLabProject < TaskLib
     # A host capable of creating rpms.
     attr_accessor :rpmhost
 
+    # Create a Sun package, using an external prototype file
+    attr_accessor :mksun
+
+    # The path to the sun spec file.
+    attr_accessor :sunpkginfo
+
+    # A host capable of creating rpms.
+    attr_accessor :sunpkghost
+
     # The hosts to run all of our tests on.
     attr_accessor :testhosts
 
@@ -224,6 +233,7 @@ class RedLabProject < TaskLib
 
         @os = Facter["operatingsystem"].value
         @rpmspecfile = "conf/redhat/#{@name}.spec"
+        @sunpkginfo = "conf/solaris/pkginfo"
         @defaulttask = :alltests
         @publishdir = "/export/docroots/reductivelabs.com/htdocs/downloads"
         @pkgpublishdir = "#{@publishdir}/#{@name}"
@@ -241,6 +251,7 @@ class RedLabProject < TaskLib
         @package_dir = "pkg"
 
         @rpmhost = "fedora1"
+        @sunpkghost = "sol10b"
 
         @requires = {}
 
@@ -485,12 +496,133 @@ class RedLabProject < TaskLib
             mv((spec + ".new"), spec)
         end
 
+        task :commit_newversion => [:update_version] do
+            if ENV['RELTEST']
+                announce "Release Task Testing, skipping commiting of new version"
+            else
+                sh %{svn commit -m "Updated to version #{@version}" #{self.rpmspecfile}}
+            end
+        end
+
         # If they have an rpm host defined, then set up to build rpms over
         # there.
         if host = self.rpmhost
             desc "Create an rpm on a system that can actually do so"
             task :package => [self.codedir] do
                 sh %{ssh #{host} 'cd svn/#{@name}/trunk; rake rpm'}
+            end
+        end
+    end
+
+    # Create a sun package
+    def mktasksunpkg
+        unless FileTest.exists?(@sunpkginfo)
+            $stderr.puts "No spec file at %s; skipping rpm" % @sunpkginfo
+            return
+        end
+        basedir = File.join("pkg", "sunpkg")
+
+        installdir = "pkg/sunpkg/opt/csw"
+
+        prototype = File.join(installdir, "prototype")
+
+        copyright = File.join(installdir, "copyright")
+
+        pkginfo = File.join(installdir, "pkginfo")
+
+        pkgname = "CSW#{@name}"
+
+        arch = %x{uname -m}.chomp
+
+        pkg = "pkg/#{pkgname}-#{@version}-#{arch}.pkg"
+
+        desc "Create a Sun Package"
+        task :sunpkg => [pkg]
+
+        file pkg => ["/tmp/CSW#{@name}"] do
+            sh %{pkgtrans /tmp/ $PWD/#{pkg} #{pkgname}}
+        end
+
+        file "/tmp/CSW#{@name}" => [basedir, prototype, copyright, pkginfo] do
+            sh %{pkgmk -d /tmp -b $PWD/pkg/sunpkg/opt/csw -f #{prototype} BASEDIR=/opt/csw}
+            CLEAN.include("/tmp/CSW#{@name}")
+        end
+
+        file "pkg/sunpkg" do
+            # First run the installer to get everything in place
+            basedir = File.join(Dir.getwd, "pkg", "sunpkg")
+
+            ENV["DESTDIR"] = basedir
+            sh %{ruby install.rb --no-tests}
+        end
+
+        file copyright do
+            sh %{cp COPYING #{installdir}/copyright}
+        end
+
+        file pkginfo do
+            sh %{cp conf/solaris/pkginfo #{installdir}/pkginfo}
+        end
+
+        file prototype => [basedir, copyright, pkginfo] do
+            user = %x{who am i}.chomp.split(/\s+/).shift
+            announce "Creating %s" % prototype
+            fullbasedir = File.join(Dir.getwd, basedir)
+            File.open(prototype, "w") do |file|
+                Dir.chdir(installdir) do
+                    IO.popen("pkgproto .") do |proto|
+                        proto.each do |line|
+                            next if line =~ /copyright/
+                            next if line =~ /prototype/
+                            next if line =~ /pkginfo/
+                            file.print line.sub(/\S+\s+\S+$/, "root bin")
+                        end
+                    end
+                end
+
+                file.puts "i pkginfo"
+                file.puts "i copyright"
+            end
+        end
+
+        # Publish the package.
+        task :publish => [:sunpkg] do
+            sh %{cp #{pkg} #{self.publishdir}/packages/SunOS}
+            sh %{gzip #{self.publishdir}/packages/SunOS/#{pkg}}
+        end
+
+        desc "Update the version in the RPM spec file"
+        task :update_version do
+            spec = self.sunpkginfo
+
+            open(spec) do |rakein|
+                open(spec + ".new", "w") do |rakeout|
+                    rakein.each do |line|
+                        if line =~ /^VERSION=\s*/
+                            rakeout.puts "VERSION=#{@version}"
+                        else
+                            rakeout.puts line
+                        end
+                    end
+                end
+            end
+            mv((spec + ".new"), spec)
+        end
+
+        task :commit_newversion => [:update_version] do
+            if ENV['RELTEST']
+                announce "Release Task Testing, skipping commiting of new version"
+            else
+                sh %{svn commit -m "Updated to version #{@version}" #{self.sunpkginfo}}
+            end
+        end
+
+        # If they have an rpm host defined, then set up to build rpms over
+        # there.
+        if host = self.sunpkghost
+            desc "Create sun package on a system that can actually do so"
+            task :package => [self.codedir] do
+                sh %{ssh #{host} 'cd svn/#{@name}/trunk; rake sunpkg'}
             end
         end
     end
