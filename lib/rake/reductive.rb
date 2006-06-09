@@ -245,13 +245,9 @@ class RedLabProject < TaskLib
         @copyright = "Copyright 2003-2005, Reductive Labs, LLC. Some Rights Reserved."
         @rfproject = @name
 
-        @epmhosts = %w{culain freebsd1}
         @defaulttask = :package
 
         @package_dir = "pkg"
-
-        @rpmhost = "fedora1"
-        @sunpkghost = "sol10b"
 
         @requires = {}
 
@@ -536,6 +532,10 @@ class RedLabProject < TaskLib
 
         pkg = "pkg/#{pkgname}-#{@version}-#{arch}.pkg"
 
+        # This is necessary because we publish on a different machine than we
+        # make the package on
+        pkgsplat = "#{pkgname}-#{@version}-*.pkg"
+
         desc "Create a Sun Package"
         task :sunpkg => [pkg]
 
@@ -586,9 +586,9 @@ class RedLabProject < TaskLib
         end
 
         # Publish the package.
-        task :publish => [:sunpkg] do
-            sh %{cp #{pkg} #{self.publishdir}/packages/SunOS}
-            sh %{gzip #{self.publishdir}/packages/SunOS/#{pkg}}
+        task :publish => [:package] do
+            sh %{cp pkg/#{pkgsplat} #{self.publishdir}/packages/SunOS}
+            sh %{gzip #{self.publishdir}/packages/SunOS/#{pkgsplat}}
         end
 
         desc "Update the version in the RPM spec file"
