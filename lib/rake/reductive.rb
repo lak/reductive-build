@@ -123,6 +123,9 @@ class RedLabProject < TaskLib
     # The defined requirements
     attr_reader :requires
 
+    # The file containing the version string.
+    attr_accessor :versionfile
+
     # Print messages on stdout
     def announce(msg = nil)
         puts msg
@@ -251,6 +254,8 @@ class RedLabProject < TaskLib
 
         @requires = {}
 
+        @versionfile = "lib/#{@name}.rb"
+
         CLOBBER.include('doc/*')
 
         yield self if block_given?
@@ -347,9 +352,9 @@ class RedLabProject < TaskLib
             if @version == self.currentversion
                 announce "No version change ... skipping version update"
             else
-                announce "Updating #{@name} version to #{@version}"
-                open("lib/#{@name}.rb") do |rakein|
-                    open("lib/#{@name}.rb.new", "w") do |rakeout|
+                announce "Updating #{@versionfile} version to #{@version}"
+                open(@versionfile) do |rakein|
+                    open("#{@versionfile}.new", "w") do |rakeout|
                         rakein.each do |line|
                             if line =~ /^(\s*)#{@name.upcase}VERSION\s*=\s*/
                                 rakeout.puts "#{$1}#{@name.upcase}VERSION = '#{@version}'"
@@ -359,7 +364,7 @@ class RedLabProject < TaskLib
                         end
                     end
                 end
-                mv "lib/#{@name}.rb.new", "lib/#{@name}.rb"
+                mv "#{@versionfile}.new", "#{@versionfile}.rb"
 
             end
         end
@@ -369,7 +374,7 @@ class RedLabProject < TaskLib
             if ENV['RELTEST']
                 announce "Release Task Testing, skipping commiting of new version"
             else
-                sh %{svn commit -m "Updated to version #{@version}" lib/#{@name}.rb}
+                sh %{svn commit -m "Updated to version #{@version}" #{@versionfile}}
             end
         end
     end
