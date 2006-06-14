@@ -364,7 +364,7 @@ class RedLabProject < TaskLib
                         end
                     end
                 end
-                mv "#{@versionfile}.new", "#{@versionfile}.rb"
+                mv "#{@versionfile}.new", @versionfile
 
             end
         end
