@@ -521,6 +521,10 @@ class RedLabProject < TaskLib
             $stderr.puts "No spec file at %s; skipping rpm" % @sunpkginfo
             return
         end
+        unless host = self.sunpkghost
+            $stderr.puts "Skipping Sun package; no packaging host defined"
+            return
+        end
         basedir = File.join("pkg", "sunpkg")
 
         installdir = "pkg/sunpkg/opt/csw"
