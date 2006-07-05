@@ -553,7 +553,7 @@ class RedLabProject < TaskLib
         end
 
         file "/tmp/CSW#{@name}" => [basedir, prototype, copyright, pkginfo] do
-            sh %{pkgmk -d /tmp -b $PWD/pkg/sunpkg/opt/csw -f #{prototype} BASEDIR=/opt/csw}
+            sh %{pkgmk -o -d /tmp -b $PWD/pkg/sunpkg/opt/csw -f #{prototype} BASEDIR=/opt/csw}
             CLEAN.include("/tmp/CSW#{@name}")
         end
 
