@@ -432,7 +432,7 @@ class RedLabProject < TaskLib
                 puts "testing %s" % host
                 cwd = Dir.getwd
                 file = "/tmp/#{@name}-#{host}test.out"
-                system("ssh #{host} 'cd svn/#{@name}/trunk/test; sudo ./test' 2>&1 >#{file}")
+                system("ssh #{host} 'cd svn/#{@name}/trunk/test; sudo rake' 2>&1 >#{file}")
 
                 if $? != 0
                     puts "%s failed; output is in %s" % [host, file]
@@ -686,8 +686,8 @@ class RedLabProject < TaskLib
     def mktaskalltests
         desc "Run all unit tests."
         task :alltests do
-            if FileTest.exists?("test/test")
-                sh %{cd test; ./test}
+            if FileTest.exists?("test/Rakefile")
+                sh %{cd test; rake}
             else
                 Dir.chdir("test") do
                     Dir.entries(".").find_all { |f| f =~ /\.rb/ }.each do |f|
