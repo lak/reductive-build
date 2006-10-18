@@ -418,7 +418,7 @@ class RedLabProject < TaskLib
                 announce "Release Task Testing, skipping SVN tagging"
             else
                 sh %{svn copy ../trunk/ ../tags/#{reltag}}
-                sh %{cd ../tags; svn ci -m "Adding release tag #{reltag}"}
+                sh %{cd ../tags; svn ci -m "Adding release tag #{reltag}" ../tags/#{reltag}}
             end
         end
     end
