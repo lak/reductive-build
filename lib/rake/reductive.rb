@@ -238,7 +238,7 @@ class RedLabProject < TaskLib
         @rpmspecfile = "conf/redhat/#{@name}.spec"
         @sunpkginfo = "conf/solaris/pkginfo"
         @defaulttask = :alltests
-        @publishdir = "/export/docroots/reductivelabs.com/htdocs/downloads"
+        @publishdir = "/opt/rl/docroots/reductivelabs.com/htdocs/downloads"
         @pkgpublishdir = "#{@publishdir}/#{@name}"
 
         @email = "dev@reductivelabs.com"
@@ -381,7 +381,7 @@ class RedLabProject < TaskLib
 
     def mktasktrac_version
         task :trac_version => [:update_version] do
-            tracpath = "/export/svn/trac/#{@name}"
+            tracpath = "/opt/rl/trac/#{@name}"
 
             unless FileTest.exists?(tracpath)
                 announce "No Trac instance at %s" % tracpath
