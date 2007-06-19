@@ -270,7 +270,7 @@ class RedLabProject < TaskLib
                 rdoc.title    = @name.capitalize
                 rdoc.options << '--line-numbers' << '--inline-source' <<
                                 '--main' << 'README'
-                rdoc.rdoc_files.include('README', 'COPYING', 'TODO', 'CHANGELOG')
+                rdoc.rdoc_files.include('README', 'COPYING', 'CHANGELOG')
                 rdoc.rdoc_files.include('lib/**/*.rb')
                 CLEAN.include("html")
             }
@@ -644,13 +644,13 @@ class RedLabProject < TaskLib
         #    #rdoc.template = 'html'
         #    rdoc.title    = "Puppet"
         #    rdoc.options << '--ri' << '--line-numbers' << '--inline-source' << '--main' << 'README'
-        #    rdoc.rdoc_files.include('README', 'COPYING', 'TODO', 'CHANGELOG')
+        #    rdoc.rdoc_files.include('README', 'COPYING', 'CHANGELOG')
         #    rdoc.rdoc_files.include('lib/**/*.rb', 'doc/**/*.rdoc')
         #}
 
         if $features[:rdoc]
             task :ri do |ri|
-                files = ['README', 'COPYING', 'TODO', 'CHANGELOG'] + Dir.glob('lib/**/*.rb')
+                files = ['README', 'COPYING', 'CHANGELOG'] + Dir.glob('lib/**/*.rb')
                 puts "files are \n%s" % files.join("\n")
                 begin
                     ri = RDoc::RDoc.new
