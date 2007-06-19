@@ -472,9 +472,11 @@ class RedLabProject < TaskLib
             sh %{mv %s/#{@name}.spec %s} % [basedir, specdir]
         end
 
-        # Publish the html.
-        task :publish => [:package] do
-            sh %{rsync -av /home/luke/rpm/. #{self.publishdir}/rpm}
+        # Skip publishing packages for now.
+        if self.rpmhost
+            task :publish => [:package] do
+                sh %{rsync -av /home/luke/rpm/. #{self.publishdir}/rpm}
+            end
         end
 
         desc "Update the version in the RPM spec file"
@@ -595,9 +597,11 @@ class RedLabProject < TaskLib
         end
 
         # Publish the package.
-        task :publish => [:package] do
-            sh %{cp pkg/#{pkgsplat} #{self.publishdir}/packages/SunOS}
-            sh %{gzip #{self.publishdir}/packages/SunOS/#{pkgsplat}}
+        if self.sunpkghost
+            task :publish => [:package] do
+                sh %{cp pkg/#{pkgsplat} #{self.publishdir}/packages/SunOS}
+                sh %{gzip #{self.publishdir}/packages/SunOS/#{pkgsplat}}
+            end
         end
 
         desc "Update the version in the RPM spec file"
