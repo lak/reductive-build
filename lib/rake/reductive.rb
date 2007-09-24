@@ -208,7 +208,7 @@ class RedLabProject < TaskLib
                     'conf/**/*'
                 ]
             end
-            @filelist.delete_if {|item| item.include?(".svn")}
+            @filelist.delete_if {|item| item.include?(".git")}
 
             @createdfilelist = true
         end
@@ -337,9 +337,9 @@ class RedLabProject < TaskLib
                 announce "Release Task Testing, skipping checked-in file test"
             else
                 announce "Checking for unchecked-in files..."
-                data = %x{svn -q update}
-                unless data =~ /^$/
-                    fail "SVN update is not clean ... do you have unchecked-in files?"
+                data = %x{git status}
+                unless data.include?("nothing to commit")
+                    fail "git status is not clean ... do you have unchecked-in files?"
                 end
                 announce "No outstanding checkins found ... OK"
             end
@@ -374,7 +374,7 @@ class RedLabProject < TaskLib
             if ENV['RELTEST']
                 announce "Release Task Testing, skipping commiting of new version"
             else
-                sh %{svn commit -m "Updated to version #{@version}" #{@versionfile}}
+                sh %{git commit -m "Updated to version #{@version}" #{@versionfile}}
             end
         end
     end
@@ -408,17 +408,15 @@ class RedLabProject < TaskLib
 
     # Create the tag task.
     def mktasktag
-        desc "Tag all the SVN files with the latest release number (REL=x.y.z)"
+        desc "Tag all the files with the latest release number (REL=x.y.z)"
         task :tag => [:prerelease] do
-            reltag = "REL_#{@version.gsub(/\./, '_')}"
-            reltag << ENV['REUSE'].gsub(/\./, '_') if ENV['REUSE']
-            announce "Tagging SVN copy with [#{reltag}]"
+            reltag = @version
+            announce "Tagging with [#{reltag}]"
 
             if ENV['RELTEST']
-                announce "Release Task Testing, skipping SVN tagging"
+                announce "Release Task Testing, skipping tagging"
             else
-                sh %{svn copy ../trunk/ ../tags/#{reltag}}
-                sh %{cd ../tags; svn ci -m "Adding release tag #{reltag}" ../tags/#{reltag}}
+                sh %{git tag #{reltag}}
             end
         end
     end
@@ -432,7 +430,7 @@ class RedLabProject < TaskLib
                 puts "testing %s" % host
                 cwd = Dir.getwd
                 file = "/tmp/#{@name}-#{host}test.out"
-                system("ssh #{host} 'cd svn/#{@name}/trunk/test; sudo rake' 2>&1 >#{file}")
+                system("ssh #{host} 'cd git/#{@name}/test; sudo rake' 2>&1 >#{file}")
 
                 if $? != 0
                     puts "%s failed; output is in %s" % [host, file]
@@ -503,7 +501,7 @@ class RedLabProject < TaskLib
             if ENV['RELTEST']
                 announce "Release Task Testing, skipping commiting of new version"
             else
-                sh %{svn commit -m "Updated to version #{@version}" #{self.rpmspecfile}}
+                sh %{git commit -m "Updated to version #{@version}" #{self.rpmspecfile}}
             end
         end
 
@@ -512,7 +510,7 @@ class RedLabProject < TaskLib
         if host = self.rpmhost
             desc "Create an rpm on a system that can actually do so"
             task :package => [self.codedir] do
-                sh %{ssh #{host} 'cd svn/#{@name}/trunk; rake rpm'}
+                sh %{ssh #{host} 'cd git/#{@name}; rake rpm'}
             end
         end
     end
@@ -626,7 +624,7 @@ class RedLabProject < TaskLib
             if ENV['RELTEST']
                 announce "Release Task Testing, skipping commiting of new version"
             else
-                sh %{svn commit -m "Updated to version #{@version}" #{self.sunpkginfo}}
+                sh %{git commit -m "Updated to version #{@version}" #{self.sunpkginfo}}
             end
         end
 
@@ -635,7 +633,7 @@ class RedLabProject < TaskLib
         if host = self.sunpkghost
             desc "Create sun package on a system that can actually do so"
             task :package => [self.codedir] do
-                sh %{ssh #{host} 'cd svn/#{@name}/trunk; rake sunpkg'}
+                sh %{ssh #{host} 'cd git/#{@name}; rake sunpkg'}
             end
         end
     end
@@ -797,7 +795,7 @@ class RedLabProject < TaskLib
                 desc "Make all of the appropriate packages on each package host"
                 task :package do
                     hosts.each do |host|
-                        sh %{ssh #{host} 'cd svn/#{@name}/trunk; rake epmnative'}
+                        sh %{ssh #{host} 'cd git/#{@name}; rake epmnative'}
                     end
                 end
 
