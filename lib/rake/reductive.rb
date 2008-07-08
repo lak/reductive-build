@@ -750,7 +750,7 @@ class RedLabProject < TaskLib
 
                 #### Author and project details.
 
-                s.author = self.author
+                s.author = [self.author]
                 s.email = self.email
                 s.homepage = self.url
                 s.rubyforge_project = self.rfproject
