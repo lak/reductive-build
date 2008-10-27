@@ -6,8 +6,6 @@ require 'rbconfig'
 require 'rake'
 require 'rake/tasklib'
 
-module Rake
-
 # The PackageTask will create the following targets:
 #
 # [<b>:clobber_package</b>]
@@ -37,7 +35,7 @@ module Rake
 #     p.package_files.include("lib/**/*.rb")
 #   end
 #
-class RedLabPackageTask < TaskLib
+class Rake::RedLabPackageTask < Rake::TaskLib
     # The different directory types we can manage.
     DIRTYPES = {
         :bindir => :bins,
@@ -266,5 +264,4 @@ class RedLabPackageTask < TaskLib
     def package_dir_path
         "#{package_dir}/#{package_name}"
     end
-end
 end

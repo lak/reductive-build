@@ -34,9 +34,12 @@ if $features[:rdoc]
     require 'rake/rdoctask'
 end
 
-module Rake
 # Create all of the standard targets for a Reductive Labs project.
-class RedLabProject < TaskLib
+# NOTE: The reason so many of the rake tasks are generated, rather than being
+# declared directly, is that they need information from the project instance.
+# Any rake task with an instance variable (e.g., @name or @version) needs
+# to have that variable assigned *before* the task is defined.  Suckage.
+class Rake::RedLabProject < Rake::TaskLib
     # The project name.
     attr_accessor :name
 
@@ -51,24 +54,6 @@ class RedLabProject < TaskLib
 
     # Create a Gem file.
     attr_accessor :mkgem
-
-    # Create an RPM, using an external spec file
-    attr_accessor :mkrpm
-
-    # The path to the rpm spec file.
-    attr_accessor :rpmspecfile
-
-    # A host capable of creating rpms.
-    attr_accessor :rpmhost
-
-    # Create a Sun package, using an external prototype file
-    attr_accessor :mksun
-
-    # The path to the sun spec file.
-    attr_accessor :sunpkginfo
-
-    # A host capable of creating rpms.
-    attr_accessor :sunpkghost
 
     # The hosts to run all of our tests on.
     attr_accessor :testhosts
@@ -224,8 +209,6 @@ class RedLabProject < TaskLib
         end
 
         @os = Facter["operatingsystem"].value
-        @rpmspecfile = "conf/redhat/#{@name}.spec"
-        @sunpkginfo = "conf/solaris/pkginfo"
         @defaulttask = :alltests
         @publishdir = "/opt/rl/docroots/reductivelabs.com/htdocs/downloads"
         @pkgpublishdir = "#{@publishdir}/#{@name}"
@@ -234,7 +217,7 @@ class RedLabProject < TaskLib
         @url = "http://reductivelabs.com/projects/#{@name}"
         @source = "http://reductivelabs.com/downloads/#{@name}/#{@name}-#{@version}.tgz"
         @vendor = "Reductive Labs, LLC"
-        @copyright = "Copyright 2003-2005, Reductive Labs, LLC. Some Rights Reserved."
+        @copyright = "Copyright 2003-2008, Reductive Labs, LLC. Some Rights Reserved."
         @rfproject = @name
 
         @defaulttask = :package
@@ -460,12 +443,9 @@ class RedLabProject < TaskLib
         end
     end
 
-    def mktaskinstall
-        # Install rake using the standard install.rb script.
-        desc "Install the application"
-        task :install do
-            ruby "install.rb"
-        end
+    desc "Install the application using the standard install.rb script"
+    task :install do
+        ruby "install.rb"
     end
 
     def mktaskdefault
@@ -475,34 +455,28 @@ class RedLabProject < TaskLib
         end
     end
 
-    def mktaskalltests
-        desc "Run all unit tests."
-        task :alltests do
-            if FileTest.exists?("test/Rakefile")
-                sh %{cd test; rake}
-            else
-                Dir.chdir("test") do
-                    Dir.entries(".").find_all { |f| f =~ /\.rb/ }.each do |f|
-                        sh %{ruby #{f}}
-                    end
+    desc "Run all unit tests."
+    task :alltests do
+        if FileTest.exists?("test/Rakefile")
+            sh %{cd test; rake}
+        else
+            Dir.chdir("test") do
+                Dir.entries(".").find_all { |f| f =~ /\.rb/ }.each do |f|
+                    sh %{ruby #{f}}
                 end
             end
         end
     end
 
-    def mktaskrubyfiles
-        desc "List all ruby files"
-        task :rubyfiles do 
-            puts Dir['**/*.rb'].reject { |fn| fn =~ /^pkg/ }
-            puts Dir['**/bin/*'].reject { |fn| fn =~ /svn|(~$)|(\.rb$)/ }
-        end
+    desc "List all ruby files"
+    task :rubyfiles do 
+        puts Dir['**/*.rb'].reject { |fn| fn =~ /^pkg/ }
+        puts Dir['**/bin/*'].reject { |fn| fn =~ /svn|(~$)|(\.rb$)/ }
     end
 
-    def mktasktodo
-        desc "Look for TODO and FIXME tags in the code"
-        task :todo do
-            egrep "/#.*(FIXME|TODO|TBD)/"
-        end
+    desc "Look for TODO and FIXME tags in the code"
+    task :todo do
+        egrep "/#.*(FIXME|TODO|TBD)/"
     end
 
     # This task requires extra information from the Rake file.
@@ -563,5 +537,4 @@ class RedLabProject < TaskLib
             CLEAN.include("pkg")
         end
     end
-end
 end
