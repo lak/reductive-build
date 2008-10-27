@@ -8,13 +8,7 @@ require 'rake/tasklib'
 
 module Rake
 
-# Create a packaging task that will package the project into
-# distributable files using EPM (http://www.easysw.com/epm).
-#
 # The PackageTask will create the following targets:
-#
-# [<b>:epmpackage</b>]
-#   Create all the requested package files.
 #
 # [<b>:clobber_package</b>]
 #   Delete all the package files.  This target is automatically
@@ -265,10 +259,6 @@ class RedLabPackageTask < TaskLib
 
     private
 
-    def pkgdest
-        @version ? "#{package_dir}/epm-#{@name}-#{@version}" : @name
-    end
-
     def package_name
         @version ? "#{@name}-#{@version}" : @name
     end
@@ -278,5 +268,3 @@ class RedLabPackageTask < TaskLib
     end
 end
 end
-
-# $Id$

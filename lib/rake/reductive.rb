@@ -13,14 +13,6 @@ require 'rake/testtask'
 $features = {}
 
 begin
-    require 'rake/epm'
-    $features[:epm] = true
-rescue => detail
-    $stderr.puts "No EPM; skipping those packages: %s" % detail
-    $features[:epm] = false
-end
-
-begin
     require 'rubygems'
     require 'rake/gempackagetask'
     $features[:gem] = true
@@ -107,9 +99,6 @@ class RedLabProject < TaskLib
 
     # The RubyForge project.
     attr_accessor :rfproject
-
-    # The hosts on which to use EPM to build packages.
-    attr_accessor :epmhosts
 
     # The list of files.  Only used for gem tasks.
     attr_writer :filelist
@@ -773,40 +762,5 @@ class RedLabProject < TaskLib
             CLEAN.include("pkg")
         end
     end
-
-    # This task requires extra information from the Rake file.
-    def mkepmtask
-        if $features[:epm]
-            Rake::EPMPackageTask.new(@name, @version) do |t|
-                t.copyright = self.copyright
-                t.vendor = self.vendor
-                t.description = self.summary
-                t.publishdir = self.publishdir
-                t.pkgpublishdir = self.pkgpublishdir
-
-                self.requires.each do |name, version|
-                    t.add_dependency(name, version)
-                end
-
-                yield t
-            end
-
-            if hosts = self.epmhosts
-                desc "Make all of the appropriate packages on each package host"
-                task :package do
-                    hosts.each do |host|
-                        sh %{ssh #{host} 'cd git/#{@name}; rake epmnative'}
-                    end
-                end
-
-                task :publish do
-                    sh %{rsync -av #{package_dir}/epm/ #{self.publishdir}/packages/}
-                end
-            end
-        end
-    end
-
 end
 end
-
-# $Id$
