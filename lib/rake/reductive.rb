@@ -530,7 +530,7 @@ class Rake::RedLabProject < Rake::TaskLib
             task :publish => [:package] do
                 puts Dir.getwd
                 sh %{cp pkg/#{@name}-#{@version}.gem #{self.publishdir}/gems}
-                sh %{generate_yaml_index.rb -d #{self.publishdir}}
+                sh %{gem generate_index -d #{self.publishdir}}
                 sh %{cp pkg/#{@name}-#{@version}.tgz #{self.pkgpublishdir}}
                 sh %{ln -sf #{@name}-#{@version}.tgz #{self.pkgpublishdir}/#{@name}-latest.tgz}
             end
